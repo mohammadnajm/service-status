@@ -1,0 +1,17 @@
+[
+    {
+        "name" : "nginx.status",
+        "statusCheck" : "active (running)",
+        "command" : "systemctl status nginx"
+    },
+    {
+        "name" : "mongodb.status",
+        "statusCheck" : "active (running)",
+        "command" : "systemctl status mongod"
+    },
+    {
+        "name" : "redis.status",
+        "statusCheck" : "active (running)",
+        "command" : "systemctl status redis"
+    }
+]

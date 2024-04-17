@@ -1,71 +1,47 @@
 const { exec } = require('child_process');
 const watchlog = require("watchlog-connect")
-
+const services = require("./services.json")
 async function checkStatus() {
-  const mongoStatus = await new Promise((resolve, reject) => {
-    exec('systemctl status mongod', (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      } else {
-        const isActive = stdout.includes('active (running)');
-        resolve(isActive ? 'running' : 'stopped');
-      }
-    });
-  });
+  try {
+    for (let i = 0; i < services.length; i++) {
 
-  const nginxStatus = await new Promise((resolve, reject) => {
-    exec('systemctl status nginx', (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      } else {
-        const isActive = stdout.includes('active (running)');
-        resolve(isActive ? 'running' : 'stopped');
-      }
-    });
-  });
+      try {
+        let serviceStatus = await new Promise((resolve, reject) => {
+          exec(services[i].command, (error, stdout, stderr) => {
+            if (error) {
+              reject(error);
+            } else {
+              const isActive = stdout.includes(services[i].statusCheck);
+              resolve(isActive ? 'running' : 'stopped');
+            }
+          });
+        });
 
-  const redisStatus = await new Promise((resolve, reject) => {
-    exec('systemctl status redis', (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      } else {
-        const isActive = stdout.includes('active (running)');
-        resolve(isActive ? 'running' : 'stopped');
-      }
-    });
-  });
+        if (serviceStatus === "running") {
+          watchlog.distribution(services[i].name, 1)
+        } else {
+          watchlog.distribution(services[i].name, 0)
+        }
+      } catch (error) {
 
-  return {
-    mongoDB: mongoStatus,
-    nginx: nginxStatus,
-    redis : redisStatus
-  };
+      }
+
+    }
+  } catch (error) {
+
+  }
+
+
 }
 
 
-setInterval(()=>{
-    checkStatus()
-  .then(status => {
-    console.log('Server Status:');
-    if(status.mongoDB === "running"){
-        watchlog.distribution("mongodb-status" , 1)
-    }else{
-        watchlog.distribution("mongodb-status" , 0)
-    }
-    if(status.nginx === "running"){
-        watchlog.distribution("nginx-status" , 1)
-    }else{
-        watchlog.distribution("nginx-status" , 0)
-    }
-    if(status.redis === "running"){
-        watchlog.distribution("redis-status" , 1)
-    }else{
-        watchlog.distribution("redis-status" , 0)
-    }
+setInterval(() => {
 
-  })
-  .catch(error => {
-    console.error('Error checking status:', error);
-  });
+
+  checkStatus()
+    .then(() => null)
+    .catch(error => {
+      console.error('Error checking status:', error);
+    });
 }, 10000)
 
